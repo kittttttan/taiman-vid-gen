@@ -12,6 +12,10 @@ PythonのMoviePyを利用してみた
 検証環境： windows10, Python 3.7.4(miniconda), MoviePy==1.0.1
 
 TODO: 自前動画の音声処理
+→ffmpegで出来た (-P,--panオプションで実行)
+```
+ffmpeg -i src.mp4 -af "pan=stereo|c1=c0" -c:v copy src-pan.mp4
+```
 
 
 # 準備
@@ -51,5 +55,5 @@ python test.py input.flv test.mp4
 # デフォルト動作
 python main.py nana.mp4 my-vid.mp4 taiman.mp4
 # オプションの使用
-python main.py nana.mp4 my-vid.mp4 taiman.mp4 -t "sample text" -p 1 -f -d
+python main.py nana.mp4 my-vid.mp4 taiman.mp4 -t "sample text" -p 1 -f -d -P
 ```

@@ -7,8 +7,11 @@ __version__ = '0.1.0'
 __license__ = 'MIT'
 
 import argparse
-from sys import exit
 from os import path
+import subprocess
+from sys import exit, stdout
+
+from moviepy.config import get_setting
 from moviepy.editor import *
 
 from logging import basicConfig, getLogger, DEBUG, INFO
@@ -45,12 +48,30 @@ def main(args):
   # video.write_videofile(dest)
   video.write_videofile(args.dest, remove_temp=False)
 
+def pan(args):
+  src = args.src
+  if not args.pan:
+    return src
+  split = path.splitext(src)
+  panned = split[0] + '-panned' + split[1]
+  cmd = [
+    get_setting('FFMPEG_BINARY'),
+    '-i', src,
+    '-af', 'pan=stereo|c1=c0',
+    '-c:v', 'copy', panned,
+  ]
+  logger.debug(cmd)
+  res = subprocess.run(cmd, stdout=subprocess.PIPE)
+  stdout.buffer.write(res.stdout)
+  return panned
+
 def horizon(args):
   logger.debug('horizon')
   clips = []
   frame_width, frame_height = (int(s) for s in args.size.split('x'))
 
-  clip = VideoFileClip(args.src).resize(width=frame_width//2).set_pos('right')
+  src = pan(args)
+  clip = VideoFileClip(src).resize(width=frame_width//2).set_pos('right')
   clips.append(clip)
   width, height = clip.size
   duration = clip.duration
@@ -66,7 +87,8 @@ def vertical(args):
   clips = []
   frame_width, frame_height = (int(s) for s in args.size.split('x'))
 
-  clip = VideoFileClip(args.src).resize(height=frame_height//2).set_pos('bottom')
+  src = pan(args)
+  clip = VideoFileClip(src).resize(height=frame_height//2).set_pos('bottom')
   clips.append(clip)
   width, height = clip.size
   duration = clip.duration
@@ -82,7 +104,8 @@ def horizon_crop(args):
   clips = []
   frame_width, frame_height = (int(s) for s in args.size.split('x'))
 
-  clip = VideoFileClip(args.src).resize(width=frame_width).set_pos('right')
+  src = pan(args)
+  clip = VideoFileClip(src).resize(width=frame_width).set_pos('right')
   width, _ = clip.size
   clip = clip.crop(x1 = width // 4, width = width // 2)
   clips.append(clip)
@@ -103,7 +126,8 @@ def wipe(args):
   clips = []
   frame_width, frame_height = (int(s) for s in args.size.split('x'))
 
-  clip = VideoFileClip(args.src).resize(width=frame_width).set_position(('right','bottom'))
+  src = pan(args)
+  clip = VideoFileClip(src).resize(width=frame_width).set_position(('right','bottom'))
   clips.append(clip)
   width, height = clip.size
   duration = clip.duration
@@ -124,6 +148,7 @@ if __name__ == '__main__':
   parser.add_argument('-s', '--size', default='320x240', help='size of video frame: ex. 320x240')
   parser.add_argument('-f', '--force', action='store_true', help='no confirm')
   parser.add_argument('-d', '--debug', action='store_true', help='for debug')
+  parser.add_argument('-P', '--pan', action='store_true', help='panning')
   args = parser.parse_args()
 
   basicConfig(level=DEBUG if args.debug else INFO)
